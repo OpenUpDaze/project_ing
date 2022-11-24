@@ -2,8 +2,8 @@ import torch
 import numpy as np
 import matplotlib.pyplot as plt
 
-
-data_path = r'C:\Users\HP\Desktop\kaggle\linear_regression\Linear Regression - Sheet1.csv'
+# 存在问题，迭代几次后就容易出现损失位inf 或Nan的情况
+data_path = r'F:\22postgraduate_class\machine_learning\Linear_by_torch\regress_data111.csv'
 xy = np.loadtxt(data_path, delimiter=',', dtype=np.float32)
 print(xy.dtype)
 
