@@ -2,8 +2,10 @@ import torch
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
-######test####
-###001
+
+plt.rcParams['font.sans-serif']=['SimHei'] #用来正常显示中文标签
+plt.rcParams['axes.unicode_minus']=False #用来正常显示负号
+
 csv_path = 'housing.csv'
 housing = pd.read_csv(csv_path)
 
@@ -17,7 +19,9 @@ y_data = torch.tensor(y_pd.values, dtype=torch.float32)
 y_data.data /= 500000   # 归一化y，防止数据过大，并且避免建立计算图
 
 fig, ax = plt.subplots(figsize=(8, 6))
-ax.scatter(x_data.data, y_data.data, label='训练数据')
+ax.scatter(x_data.data, y_data.data)
+ax.set_xlabel('收入/万')
+ax.set_ylabel('median_house_value')
 plt.show()
 
 
@@ -54,12 +58,14 @@ print('b = ',model.linear.bias.item())
 #---------------------------画图---------------------------#
 w = model.linear.weight.item()
 b = model.linear.bias.item()
-x = np.linspace(0, 15, 100)
+x = np.linspace(0, 25, 100)
 f = x * w + b
 
 fig, ax = plt.subplots(figsize=(8, 6))
 ax.plot(x, f, 'r', label='预测值')
-ax.scatter(x_data.data, y_data.data, label='训练数据')
+ax.scatter(x_data.data, y_data.data)
+ax.set_xlabel('收入/万')
+ax.set_ylabel('median_house_value')
 plt.show()
 
 
