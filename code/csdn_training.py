@@ -52,7 +52,7 @@ import torch.optim as optim
 
 feature_number = 8  # 设置特征数目
 out_prediction = 1  # 设置输出数目
-learning_rate = 0.001  # 设置学习率
+learning_rate = 0.00001  # 设置学习率
 epochs = 50  # 设置训练代数
 
 
@@ -62,9 +62,9 @@ class Model(torch.nn.Module):
         self.n_output = n_output
         super(Model, self).__init__()
         self.input_layer = torch.nn.Linear(self.n_feature, 20)  # 输入层
-        self.hidden1 = torch.nn.Linear(20, 20)  # 1类隐藏层
-        self.hidden2 = torch.nn.Linear(20, 20)  # 2类隐藏
-        self.predict = torch.nn.Linear(20, self.n_output)  # 输出层
+        self.hidden1 = torch.nn.Linear(20, 16)  # 1类隐藏层
+        self.hidden2 = torch.nn.Linear(16, 10)  # 2类隐藏
+        self.predict = torch.nn.Linear(10, self.n_output)  # 输出层
         self.ReLU = torch.nn.ReLU()  # hyd 激活函数
 
     def forward(self, x):
@@ -81,28 +81,28 @@ model = Model(n_feature=feature_number, n_output=out_prediction)  # 这里直接
 
 optimizer = torch.optim.SGD(model.parameters(), lr=0.01)
 #optimizer = optim.Adam(model.parameters(), learning_rate)  # 使用Adam算法更新参数
-criteon = torch.nn.MSELoss(reduction='mean')  # 误差计算公式，回归问题采用均方误差
+criterion = torch.nn.MSELoss(reduction='mean')  # 误差计算公式，回归问题采用均方误差
 
 for epoch in range(epochs):  # 整个数据集迭代次数
     model.train()  # 启动训练模式
     for batch_idx, (data, target) in enumerate(train_data):
         logits = model.forward(data)  # 前向计算结果（预测结果）
-        loss = criteon(logits, target)  # 计算损失
+        loss = criterion(logits, target)  # 计算损失
         optimizer.zero_grad()  # 梯度清零
         loss.backward()  # 后向传递过程
         optimizer.step()  # 优化权重与偏差矩阵
         print('epoch = ', epoch, 'loss = ', loss.item())
 
-    logit = []  # 这个是验证集，可以根据验证集的结果进行调参，这里根据验证集的结果选取最优的神经网络层数与神经元数目
-    target = []
-    model.eval()  # 启动测试模式
-    for data, targets in validation:  # 输出验证集的平均误差
-        logits = model.forward(data).detach().numpy()
-        targets = targets.detach().numpy()  # hyd .detach()返回一个new Tensor，只不过不再有梯度,再加.numpy()转化为numpy的格式
-        target.append(targets[0])
-        logit.append(logits[0])
-    average_loss = criteon(torch.tensor(logit), torch.tensor(target))
-    print(f'\nTrain Epoch:{epoch} for the Average loss of VAL')
+    # logit = []  # 这个是验证集，可以根据验证集的结果进行调参，这里根据验证集的结果选取最优的神经网络层数与神经元数目
+    # target = []
+    # model.eval()  # 启动测试模式
+    # for data, targets in validation:  # 输出验证集的平均误差
+    #     logits = model.forward(data).detach().numpy()
+    #     targets = targets.detach().numpy()  # hyd .detach()返回一个new Tensor，只不过不再有梯度,再加.numpy()转化为numpy的格式
+    #     target.append(targets[0])
+    #     logit.append(logits[0])
+    # average_loss = criteon(torch.tensor(logit), torch.tensor(target))
+    # print(f'\nTrain Epoch:{epoch} for the Average loss of VAL')
 
 ####################### 3 测试模型及可视化##############################
 
@@ -122,7 +122,7 @@ prediction = scaler.inverse_transform(np.array(prediction).reshape(
     -1, 1))  # 将数据恢复至归一化之前
 test_y = scaler.inverse_transform(np.array(test_y).reshape(-1, 1))
 # 均方误差计算
-test_loss = criteon(torch.tensor(prediction, dtype=torch.float32), torch.tensor(test_y, dtype=torch.float32))
+test_loss = criterion(torch.tensor(prediction, dtype=torch.float32), torch.tensor(test_y, dtype=torch.float32))
 print('测试集均方误差：', test_loss.detach().numpy())
 
 # 可视化
