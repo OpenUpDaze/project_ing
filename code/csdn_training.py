@@ -5,7 +5,7 @@ import pandas as pd
 
 csv_path = 'housing.csv'
 housing = pd.read_csv(csv_path)
-x_pd, y_pd = housing.iloc[:, 0:8], housing.iloc[:, -2:-1]
+x_pd, y_pd = housing.iloc[:, 7:8], housing.iloc[:, -2:-1]
 
 '''对每列（特征）归一化'''
 from sklearn.preprocessing import MinMaxScaler  # 导入归一化模块
@@ -44,13 +44,13 @@ train, validation = torch.utils.data.random_split(train_validaion, [14448, 0])  
 
 # 再将训练集划分批次，每batch_size个数据一批（测试集与验证集不划分批次）
 train_data = torch.utils.data.DataLoader(train,
-                                         batch_size=1,
+                                         batch_size=32,
                                          shuffle=True)
 
 '''训练部分'''
 import torch.optim as optim
 
-feature_number = 8  # 设置特征数目
+feature_number = 1  # 设置特征数目
 out_prediction = 1  # 设置输出数目
 learning_rate = 0.00001  # 设置学习率
 epochs = 50  # 设置训练代数
@@ -84,7 +84,6 @@ optimizer = torch.optim.SGD(model.parameters(), lr=0.01)
 criterion = torch.nn.MSELoss(reduction='mean')  # 误差计算公式，回归问题采用均方误差
 
 for epoch in range(epochs):  # 整个数据集迭代次数
-    model.train()  # 启动训练模式
     for batch_idx, (data, target) in enumerate(train_data):
         logits = model.forward(data)  # 前向计算结果（预测结果）
         loss = criterion(logits, target)  # 计算损失
