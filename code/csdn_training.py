@@ -1,5 +1,20 @@
 # 循环几次数据，损失就很小了，记下循环损失为nan
+import torch
 import pandas as pd
+import matplotlib.pyplot as plt
+import numpy as np
+from sklearn.preprocessing import MinMaxScaler  # 导入归一化模块
+import time
+
+feature_number = 1  # 设置特征数目
+out_prediction = 1  # 设置输出数目
+learning_rate = 0.00001  # 设置学习率
+epochs = 1000  # 设置训练代数
+
+
+plt.rcParams['font.sans-serif']=['SimHei'] #用来正常显示中文标签
+plt.rcParams['axes.unicode_minus']=False #用来正常显示负号
+
 
 '''导入数据'''
 
@@ -8,27 +23,27 @@ housing = pd.read_csv(csv_path)
 x_pd, y_pd = housing.iloc[:, 7:8], housing.iloc[:, -2:-1]
 
 '''对每列（特征）归一化'''
-from sklearn.preprocessing import MinMaxScaler  # 导入归一化模块
 
-# feature_range控制压缩数据范围，默认[0,1]
-scaler = MinMaxScaler(feature_range=[0, 1])  # 实例化，调整0,1的数值可以改变归一化范围
 
-X = scaler.fit_transform(x_pd)  # 将标签归一化到0,1之间
-Y = scaler.fit_transform(y_pd)  # 将特征归于化到0,1之间
+# # feature_range控制压缩数据范围，默认[0,1]
+# scaler = MinMaxScaler(feature_range=[0, 1])  # 实例化，调整0,1的数值可以改变归一化范围
+#
+# X = scaler.fit_transform(x_pd)  # 将标签归一化到0,1之间
+# Y = scaler.fit_transform(y_pd)  # 将特征归于化到0,1之间
 
-# '''对每列数据执行标准化'''
-#
-# from sklearn.preprocessing import StandardScaler
-#
-# scaler = StandardScaler()  # 实例化
-# X = scaler.fit_transform(x_pd)  # 标准化特征
-# Y = scaler.fit_transform(y_pd)  # 标准化标签
-#
-# # x = scaler.inverse_transform(X) # 这行代码可以将数据恢复至标准化之前
+'''对每列数据执行标准化'''
+
+from sklearn.preprocessing import StandardScaler
+
+scaler = StandardScaler()  # 实例化
+X = scaler.fit_transform(x_pd)  # 标准化特征
+Y = scaler.fit_transform(y_pd)  # 标准化标签
+
+# x = scaler.inverse_transform(X) # 这行代码可以将数据恢复至标准化之前
 
 
 '''划分数据集'''
-import torch
+
 
 X = torch.tensor(X, dtype=torch.float32)  # 将数据集转换成torch能识别的格式
 Y = torch.tensor(Y, dtype=torch.float32)
@@ -36,7 +51,7 @@ Y = torch.tensor(Y, dtype=torch.float32)
 torch_dataset = torch.utils.data.TensorDataset(X, Y)  # 组成torch专门的数据库
 
 # 划分训练集测试集与验证集
-torch.manual_seed(seed=2021)  # 设置随机种子分关键，不然每次划分的数据集都不一样，不利于结果复现
+torch.manual_seed(seed=2022)  # 设置随机种子分关键，不然每次划分的数据集都不一样，不利于结果复现
 train_validaion, test = torch.utils.data.random_split(
     torch_dataset,
     [14448, 6192])  # 先将数据集拆分为训练集+验证集（共450组），测试集（56组） # hyd 总长度一定要与数据集中数字数据长度一致 14448+6192 = 20640
@@ -48,12 +63,8 @@ train_data = torch.utils.data.DataLoader(train,
                                          shuffle=True)
 
 '''训练部分'''
-import torch.optim as optim
 
-feature_number = 1  # 设置特征数目
-out_prediction = 1  # 设置输出数目
-learning_rate = 0.00001  # 设置学习率
-epochs = 50  # 设置训练代数
+
 
 
 class Model(torch.nn.Module):
@@ -79,10 +90,11 @@ class Model(torch.nn.Module):
 
 model = Model(n_feature=feature_number, n_output=out_prediction)  # 这里直接确定了隐藏层数目以及神经元数目，实际操作中需要遍历
 
-optimizer = torch.optim.SGD(model.parameters(), lr=0.01)
+optimizer = torch.optim.SGD(model.parameters(), lr=learning_rate)
 #optimizer = optim.Adam(model.parameters(), learning_rate)  # 使用Adam算法更新参数
 criterion = torch.nn.MSELoss(reduction='mean')  # 误差计算公式，回归问题采用均方误差
 
+loss_array = []
 for epoch in range(epochs):  # 整个数据集迭代次数
     for batch_idx, (data, target) in enumerate(train_data):
         logits = model.forward(data)  # 前向计算结果（预测结果）
@@ -90,8 +102,18 @@ for epoch in range(epochs):  # 整个数据集迭代次数
         optimizer.zero_grad()  # 梯度清零
         loss.backward()  # 后向传递过程
         optimizer.step()  # 优化权重与偏差矩阵
-        print('epoch = ', epoch, 'loss = ', loss.item())
+    print('epoch = ', epoch, 'loss = ', loss.item())
+    loss_array.append(loss.item())
 
+print('run time =', time.process_time(), 's')
+
+epoch_array = [i for i in range(epochs)]
+fig, ax = plt.subplots(figsize=(8, 6))
+ax.plot(epoch_array, loss_array, 'r', label='loss')
+ax.set_xlabel('epoch')
+ax.set_ylabel('loss')
+fig.savefig('fig.png')
+plt.show()
     # logit = []  # 这个是验证集，可以根据验证集的结果进行调参，这里根据验证集的结果选取最优的神经网络层数与神经元数目
     # target = []
     # model.eval()  # 启动测试模式
@@ -105,32 +127,34 @@ for epoch in range(epochs):  # 整个数据集迭代次数
 
 ####################### 3 测试模型及可视化##############################
 
-import matplotlib.pyplot as plt
-import numpy as np
 
-prediction = []
-test_y = []
-model.eval()  # 启动测试模式
-for test_x, test_ys in test:
-    predictions = model(test_x)
-    predictions = predictions.detach().numpy()
-    prediction.append(predictions[0])
-    test_ys.detach().numpy()
-    test_y.append(test_ys[0])
-prediction = scaler.inverse_transform(np.array(prediction).reshape(
-    -1, 1))  # 将数据恢复至归一化之前
-test_y = scaler.inverse_transform(np.array(test_y).reshape(-1, 1))
-# 均方误差计算
-test_loss = criterion(torch.tensor(prediction, dtype=torch.float32), torch.tensor(test_y, dtype=torch.float32))
-print('测试集均方误差：', test_loss.detach().numpy())
+#
+# prediction = []
+# test_y = []
+# model.eval()  # 启动测试模式
+# for test_x, test_ys in test:
+#     predictions = model(test_x)
+#     predictions = predictions.detach().numpy()
+#     prediction.append(predictions[0])
+#     test_ys.detach().numpy()
+#     test_y.append(test_ys[0])
+# prediction = scaler.inverse_transform(np.array(prediction).reshape(
+#     -1, 1))  # 将数据恢复至归一化之前
+# test_y = scaler.inverse_transform(np.array(test_y).reshape(-1, 1))
+# # 均方误差计算
+# test_loss = criterion(torch.tensor(prediction, dtype=torch.float32), torch.tensor(test_y, dtype=torch.float32))
+# print('测试集均方误差：', test_loss.detach().numpy())
+#
+# # 可视化
+# plt.figure()
+# plt.scatter(test_y, prediction, color='red')
+# plt.plot([0, 52], [0, 52], color='black', linestyle='-')
+# plt.xlim([-0.05, 52])
+# plt.ylim([-0.05, 52])
+# plt.xlabel('true')
+# plt.ylabel('prediction')
+# plt.title('true vs prection')
+# plt.show()
 
-# 可视化
-plt.figure()
-plt.scatter(test_y, prediction, color='red')
-plt.plot([0, 52], [0, 52], color='black', linestyle='-')
-plt.xlim([-0.05, 52])
-plt.ylim([-0.05, 52])
-plt.xlabel('true')
-plt.ylabel('prediction')
-plt.title('true vs prection')
-plt.show()
+
+
