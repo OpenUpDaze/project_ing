@@ -9,7 +9,7 @@ import time
 feature_number = 3  # 设置特征数目
 out_prediction = 1  # 设置输出数目
 learning_rate = 0.00001  # 设置学习率0.00001
-epochs = 1000  # 设置训练次数
+epochs = 10 # 设置训练次数
 Myseed = 2022  # 设置随机种子分关键，不然每次划分的数据集都不一样，不利于结果复现
 
 plt.rcParams['font.sans-serif']=['SimHei'] #用来正常显示中文标签
@@ -35,9 +35,9 @@ x_pd, y_pd = housing.iloc[:, 5:8], housing.iloc[:, -2:-1]
 
 from sklearn.preprocessing import StandardScaler
 
-scaler = StandardScaler()  # 实例化
-X = scaler.fit_transform(x_pd)  # 标准化特征
-Y = scaler.fit_transform(y_pd)  # 标准化标签
+scaler = StandardScaler()                                  # 实例化
+X = scaler.fit_transform(x_pd)                        # 标准化特征
+Y = scaler.fit_transform(y_pd)                           # 标准化标签
 
 # x = scaler.inverse_transform(X) # 这行代码可以将数据恢复至标准化之前
 
@@ -91,19 +91,42 @@ class Model(torch.nn.Module):
 model = Model(n_feature=feature_number, n_output=out_prediction)  # 这里直接确定了隐藏层数目以及神经元数目，实际操作中需要遍历
 
 optimizer = torch.optim.SGD(model.parameters(), lr=learning_rate)
-#optimizer = optim.Adam(model.parameters(), learning_rate)  # 使用Adam算法更新参数
 criterion = torch.nn.MSELoss(reduction='mean')  # 误差计算公式，回归问题采用均方误差
 
 loss_array = []
 for epoch in range(epochs):  # 整个数据集迭代次数
     for batch_idx, (data, target) in enumerate(train_data):
-        logits = model.forward(data)  # 前向计算结果（预测结果）
+        logits = model(data)  # 前向计算结果（预测结果）
         loss = criterion(logits, target)  # 计算损失
         optimizer.zero_grad()  # 梯度清零
         loss.backward()  # 后向传递过程
         optimizer.step()  # 优化权重与偏差矩阵
     print('epoch = ', epoch, 'loss = ', loss.item())
     loss_array.append(loss.item())
+
+
+pre_array = []
+test_array = []
+model.eval()  # 启动测试模式
+for test_x, test_ys in test:
+    pre = model(test_x)
+    print(pre.item())
+    pre_array.append(pre.item())
+    test_array.append(test_ys.item())
+
+
+# 可视化
+plt.figure()
+plt.scatter(test_array, pre_array, color='blue', alpha=1/7)
+#plt.plot([0, 52], [0, 52], color='black', linestyle='-')
+# plt.xlim([-0.05, 52])
+# plt.ylim([-0.05, 52])
+plt.xlabel('true')
+plt.ylabel('prediction')
+plt.title('true vs prection')
+
+
+
 
 print('run time =', time.process_time(), 's')
 
@@ -114,6 +137,9 @@ ax.set_xlabel('epoch')
 ax.set_ylabel('loss')
 fig.savefig('fig.png')
 plt.show()
+
+
+
     # logit = []  # 这个是验证集，可以根据验证集的结果进行调参，这里根据验证集的结果选取最优的神经网络层数与神经元数目
     # target = []
     # model.eval()  # 启动测试模式
