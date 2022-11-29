@@ -6,11 +6,11 @@ import numpy as np
 from sklearn.preprocessing import MinMaxScaler  # 导入归一化模块
 import time
 
-feature_number = 1  # 设置特征数目
+feature_number = 3  # 设置特征数目
 out_prediction = 1  # 设置输出数目
-learning_rate = 0.00001  # 设置学习率
-epochs = 1000  # 设置训练代数
-
+learning_rate = 0.00001  # 设置学习率0.00001
+epochs = 1000  # 设置训练次数
+Myseed = 2022  # 设置随机种子分关键，不然每次划分的数据集都不一样，不利于结果复现
 
 plt.rcParams['font.sans-serif']=['SimHei'] #用来正常显示中文标签
 plt.rcParams['axes.unicode_minus']=False #用来正常显示负号
@@ -20,7 +20,7 @@ plt.rcParams['axes.unicode_minus']=False #用来正常显示负号
 
 csv_path = 'housing.csv'
 housing = pd.read_csv(csv_path)
-x_pd, y_pd = housing.iloc[:, 7:8], housing.iloc[:, -2:-1]
+x_pd, y_pd = housing.iloc[:, 5:8], housing.iloc[:, -2:-1]
 
 '''对每列（特征）归一化'''
 
@@ -51,7 +51,7 @@ Y = torch.tensor(Y, dtype=torch.float32)
 torch_dataset = torch.utils.data.TensorDataset(X, Y)  # 组成torch专门的数据库
 
 # 划分训练集测试集与验证集
-torch.manual_seed(seed=2022)  # 设置随机种子分关键，不然每次划分的数据集都不一样，不利于结果复现
+torch.manual_seed(seed=Myseed)  # 设置随机种子分关键，不然每次划分的数据集都不一样，不利于结果复现
 train_validaion, test = torch.utils.data.random_split(
     torch_dataset,
     [14448, 6192])  # 先将数据集拆分为训练集+验证集（共450组），测试集（56组） # hyd 总长度一定要与数据集中数字数据长度一致 14448+6192 = 20640
